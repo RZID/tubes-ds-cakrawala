@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <queue>
 #include <climits>
+#include <iomanip>
 
 using namespace std;
 
@@ -65,6 +66,30 @@ public:
         }
     }
     
+    // Method untuk menghapus halte dari sistem
+    void hapusHalte(const string& namaHalte) {
+        // Periksa apakah halte ada dalam sistem
+        if (graph.find(namaHalte) == graph.end()) {
+            cout << "Halte " << namaHalte << " tidak ditemukan dalam sistem." << endl;
+            return;
+        }
+        
+        // Hapus semua edge yang menuju ke halte ini dari halte lain
+        for (auto& pair : graph) {
+            vector<Edge>& edges = pair.second;
+            edges.erase(
+                remove_if(edges.begin(), edges.end(),
+                    [&namaHalte](const Edge& e) { return e.tujuan == namaHalte; }),
+                edges.end()
+            );
+        }
+        
+        // Hapus halte dari graph
+        graph.erase(namaHalte);
+        
+        cout << "Halte " << namaHalte << " berhasil dihapus dari sistem." << endl;
+    }
+    
     // Method untuk menambahkan rute (edge) antara dua halte
     void tambahRute(const string& halteAsal, const string& halteTujuan, int jarak) {
         // Pastikan kedua halte sudah ada dalam sistem
@@ -81,7 +106,42 @@ public:
         graph[halteTujuan].push_back(Edge(halteAsal, jarak));
         
         cout << "Rute dari " << halteAsal << " ke " << halteTujuan 
-             << " dengan jarak " << jarak << " berhasil ditambahkan." << endl;
+            << " dengan jarak " << jarak << " berhasil ditambahkan." << endl;
+    }
+    
+    // Method untuk menghapus rute antara dua halte
+    void hapusRute(const string& halteAsal, const string& halteTujuan) {
+        // Periksa apakah kedua halte ada dalam sistem
+        if (graph.find(halteAsal) == graph.end() || graph.find(halteTujuan) == graph.end()) {
+            cout << "Salah satu atau kedua halte tidak ditemukan dalam sistem." << endl;
+            return;
+        }
+        
+        bool ruteAda = false;
+        
+        // Hapus rute dari halte asal ke halte tujuan
+        vector<Edge>& edgesAsal = graph[halteAsal];
+        auto it1 = remove_if(edgesAsal.begin(), edgesAsal.end(),
+            [&halteTujuan](const Edge& e) { return e.tujuan == halteTujuan; });
+        if (it1 != edgesAsal.end()) {
+            edgesAsal.erase(it1, edgesAsal.end());
+            ruteAda = true;
+        }
+        
+        // Hapus rute dari halte tujuan ke halte asal (karena graf tidak berarah)
+        vector<Edge>& edgesTujuan = graph[halteTujuan];
+        auto it2 = remove_if(edgesTujuan.begin(), edgesTujuan.end(),
+            [&halteAsal](const Edge& e) { return e.tujuan == halteAsal; });
+        if (it2 != edgesTujuan.end()) {
+            edgesTujuan.erase(it2, edgesTujuan.end());
+            ruteAda = true;
+        }
+        
+        if (ruteAda) {
+            cout << "Rute antara " << halteAsal << " dan " << halteTujuan << " berhasil dihapus." << endl;
+        } else {
+            cout << "Rute antara " << halteAsal << " dan " << halteTujuan << " tidak ditemukan." << endl;
+        }
     }
     
     // Method untuk menambahkan data penumpang ke hash table
@@ -99,6 +159,19 @@ public:
         cout << "Penumpang " << nama << " dengan ID " << id << " berhasil ditambahkan." << endl;
     }
     
+    // Method untuk menghapus penumpang berdasarkan ID
+    void hapusPenumpang(int id) {
+        // Cari penumpang dalam hash table
+        auto it = hashTablePenumpang.find(id);
+        if (it != hashTablePenumpang.end()) {
+            string namaPenumpang = it->second.nama;
+            hashTablePenumpang.erase(it);
+            cout << "Penumpang " << namaPenumpang << " dengan ID " << id << " berhasil dihapus." << endl;
+        } else {
+            cout << "Penumpang dengan ID " << id << " tidak ditemukan." << endl;
+        }
+    }
+    
     // Method untuk mencari penumpang berdasarkan ID
     void cariPenumpang(int id) {
         // Cari penumpang dalam hash table
@@ -107,11 +180,11 @@ public:
             // Jika ditemukan, tampilkan informasi penumpang
             Penumpang& p = it->second;
             cout << "\n=== INFORMASI PENUMPANG ===" << endl;
-            cout << "ID: " << p.id << endl;
-            cout << "Nama: " << p.nama << endl;
-            cout << "Titik Naik: " << p.titikNaik << endl;
-            cout << "Titik Turun: " << p.titikTurun << endl;
-            cout << "Status Tiket: " << p.statusTiket << endl;
+            cout << left << setw(15) << "ID:" << p.id << endl;
+            cout << left << setw(15) << "Nama:" << p.nama << endl;
+            cout << left << setw(15) << "Titik Naik:" << p.titikNaik << endl;
+            cout << left << setw(15) << "Titik Turun:" << p.titikTurun << endl;
+            cout << left << setw(15) << "Status Tiket:" << p.statusTiket << endl;
         } else {
             cout << "Penumpang dengan ID " << id << " tidak ditemukan." << endl;
         }
@@ -167,8 +240,9 @@ public:
             cout << "Tidak ada rute dari " << asal << " ke " << tujuan << endl;
         } else {
             cout << "\n=== RUTE TERPENDEK ===" << endl;
-            cout << "Dari " << asal << " ke " << tujuan << endl;
-            cout << "Jarak total: " << jarak[tujuan] << endl;
+            cout << left << setw(15) << "Dari:" << asal << endl;
+            cout << left << setw(15) << "Ke:" << tujuan << endl;
+            cout << left << setw(15) << "Jarak Total:" << jarak[tujuan] << endl;
             
             // Rekonstruksi jalur
             vector<string> jalur;
@@ -180,7 +254,7 @@ public:
             jalur.push_back(asal);
             reverse(jalur.begin(), jalur.end());
             
-            cout << "Jalur: ";
+            cout << left << setw(15) << "Jalur:";
             for (size_t i = 0; i < jalur.size(); i++) {
                 cout << jalur[i];
                 if (i < jalur.size() - 1) cout << " -> ";
@@ -217,47 +291,61 @@ public:
     void urutkanRuteBerdasarkanPenumpang() {
         // Hitung penumpang per rute terlebih dahulu
         hitungPenumpangPerRute();
-        
+
         // Sorting menggunakan lambda function untuk mengurutkan secara descending
         sort(infoRute.begin(), infoRute.end(), 
-             [](const InfoRute& a, const InfoRute& b) {
-                 return a.jumlahPenumpang > b.jumlahPenumpang; // Descending order
-             });
-        
+            [](const InfoRute& a, const InfoRute& b) {
+                return a.jumlahPenumpang > b.jumlahPenumpang; // Descending order
+            });
+
         // Tampilkan hasil sorting
         cout << "\n=== RUTE DIURUTKAN BERDASARKAN JUMLAH PENUMPANG ===" << endl;
-        cout << "No.\tRute\t\t\t\tJumlah Penumpang" << endl;
-        cout << "---\t----\t\t\t\t----------------" << endl;
-        
-        for (size_t i = 0; i < infoRute.size(); i++) {
-            cout << (i+1) << ".\t" << infoRute[i].namaRute 
-                 << "\t\t\t" << infoRute[i].jumlahPenumpang << endl;
-        }
-        
+        cout << left << setw(5) << "No." 
+            << setw(35) << "Rute" 
+            << "Jumlah Penumpang" << endl;
+        cout << string(60, '-') << endl;
+
         if (infoRute.empty()) {
             cout << "Tidak ada data rute dengan penumpang aktif." << endl;
+            return;
+        }
+
+        for (size_t i = 0; i < infoRute.size(); i++) {
+            cout << left << setw(5) << (to_string(i + 1) + ".")
+                << setw(35) << infoRute[i].namaRute
+                << infoRute[i].jumlahPenumpang << endl;
         }
     }
-    
+
     // Method untuk menampilkan semua halte dalam sistem
     void tampilkanSemuaHalte() {
         cout << "\n=== DAFTAR HALTE ===" << endl;
+        cout << left << setw(5) << "No." << "Nama Halte" << endl;
+        cout << string(40, '-') << endl;
+        
         int nomor = 1;
         for (const auto& pair : graph) {
-            cout << nomor++ << ". " << pair.first << endl;
+            cout << left << setw(5) << (to_string(nomor++) + ".") << pair.first << endl;
         }
     }
     
     // Method untuk menampilkan semua penumpang
     void tampilkanSemuaPenumpang() {
         cout << "\n=== DAFTAR PENUMPANG ===" << endl;
-        cout << "ID\tNama\t\tNaik\t\tTurun\t\tStatus" << endl;
-        cout << "--\t----\t\t----\t\t-----\t\t------" << endl;
+        cout << left << setw(5) << "ID" 
+            << setw(20) << "Nama" 
+            << setw(20) << "Naik" 
+            << setw(20) << "Turun" 
+            << "Status" << endl;
+        cout << string(80, '-') << endl;
         
         for (const auto& pair : hashTablePenumpang) {
             const Penumpang& p = pair.second;
-            cout << p.id << "\t" << p.nama << "\t\t" << p.titikNaik << "\t\t" 
-                 << p.titikTurun << "\t\t" << p.statusTiket << endl;
+            cout << left << setw(5) << p.id 
+                << setw(20) << p.nama 
+                << setw(20) << p.titikNaik 
+                << setw(20) << p.titikTurun 
+                << p.statusTiket << endl;
         }
     }
 };
@@ -267,15 +355,18 @@ void tampilkanMenu() {
     cout << "\n======================================" << endl;
     cout << "      SISTEM GOBUSNET - MENU UTAMA    " << endl;
     cout << "======================================" << endl;
-    cout << "1. Tambah Halte" << endl;
-    cout << "2. Tambah Rute" << endl;
-    cout << "3. Tambah Penumpang" << endl;
-    cout << "4. Cari Penumpang" << endl;
-    cout << "5. Cari Rute Terpendek" << endl;
-    cout << "6. Urutkan Rute Berdasarkan Penumpang" << endl;
-    cout << "7. Tampilkan Semua Halte" << endl;
-    cout << "8. Tampilkan Semua Penumpang" << endl;
-    cout << "9. Keluar" << endl;
+    cout << "1.  Tambah Halte" << endl;
+    cout << "2.  Tambah Rute" << endl;
+    cout << "3.  Tambah Penumpang" << endl;
+    cout << "4.  Cari Penumpang" << endl;
+    cout << "5.  Cari Rute Terpendek" << endl;
+    cout << "6.  Urutkan Rute Berdasarkan Penumpang" << endl;
+    cout << "7.  Tampilkan Semua Halte" << endl;
+    cout << "8.  Tampilkan Semua Penumpang" << endl;
+    cout << "9.  Hapus Halte" << endl;
+    cout << "10. Hapus Rute" << endl;
+    cout << "11. Hapus Penumpang" << endl;
+    cout << "12. Keluar" << endl;
     cout << "======================================" << endl;
     cout << "Pilihan Anda: ";
 }
@@ -547,6 +638,32 @@ int main() {
                 break;
             }
             case 9: {
+                string halte;
+                cout << "Masukkan halte yang ingin dihapus: ";
+                cin.ignore();
+                getline(cin, halte);
+                sistem.hapusHalte(halte);
+                break;
+            }
+            case 10: {
+                string asal, tujuan;
+                cout << "Masukkan halte asal: ";
+                cin.ignore();
+                getline(cin, asal);
+                cout << "Masukkan halte tujuan: ";
+                getline(cin, tujuan);
+                sistem.hapusRute(asal, tujuan);
+                break;
+            }
+            case 11: {
+                string id;
+                cout << "Masukkan id penumpang: ";
+                cin.ignore();
+                getline(cin, id);
+                sistem.hapusPenumpang(stoi(id));
+                break;
+            }
+            case 12: {
                 // Keluar dari program
                 cout << "Terima kasih telah menggunakan sistem GoBusNet!" << endl;
                 break;
@@ -556,7 +673,7 @@ int main() {
                 break;
             }
         }
-    } while (pilihan != 9);
+    } while (pilihan != 12);
     
     return 0;
 }
